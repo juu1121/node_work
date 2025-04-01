@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   onLoad: (callback:(a:string)=>void) => {
     //이 이벤트는 여기에 실행의 흐름이 와야 등록이 된다.
     ipcRenderer.on("loaded", (_event, content)=>{
-      callback(content);
+      callback(content); //함수호출하면서 데이터넣어줌줌
     });
   },
   load2: ()=>{
@@ -24,7 +24,7 @@ contextBridge.exposeInMainWorld('api', {
 
     ipcRenderer.on("saveContent", (_event, data)=>{
       //현재까지 입력한 문자열 읽어오기기
-      const content = callback();
+      const content = callback(); //함수호출해서 리턴된데이터 사용용
       //콘솔에 출력하기
       console.log("현재까지 입력한 문자열:"+content);
       data.content=content;
