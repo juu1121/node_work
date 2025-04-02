@@ -1,5 +1,9 @@
 import { ChangeEvent, useEffect, useState } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css'
+import EditPostModal from "./components/EditPostModal";
+import ToastMessage from "./components/ToastMessage";
+import { ToastInfo } from "./types";
+
 
 interface Post{
   readonly id?:number;
@@ -12,6 +16,7 @@ declare global{
       getPosts: ()=>Promise<Post[]> //글 목록을 받아오는 기능 (promise로 받아오겠다.)
       addPost : (a:Post) => Promise<Post> //글 추가하는 기능
       deletePost : (a:number|undefined)=>Promise<Post> //글 삭제하는 기능
+      updatePost : (a:Post) => Promise<Post> //글 수정하는 기능능
     }
   }
 }
@@ -46,24 +51,93 @@ function App() {
   }, []);
 
   const add = async ()=>{
-    const post:Post = await window.api.addPost(newPost);
-    console.log(post);
-    //입력창 초기화
-    setNewPost({
-      title:"",
-      author:""
-    });
-    //리프레쉬 
-    load();
+    try{
+      const post:Post = await window.api.addPost(newPost);
+      console.log(post);
+      //입력창 초기화
+      setNewPost({
+        title:"",
+        author:""
+      });
+      //리프레쉬 
+      load();
+      //Toast 띄우기
+      setToastInfo({
+        color:"success",
+        message:"✅ 글을 저장했습니다."
+      });
+      setShowToast(true);
+    }catch(e){
+      console.log("에러!");
+      setToastInfo({
+        color:"warning",
+        message:"❌ 글 저장 실패!"
+      });
+      setShowToast(true);
+    }
   }
 
   const deletePost = async (id:number|undefined)=>{
     await window.api.deletePost(id);
     load();
+    //Toast 띄우기
+    setToastInfo({
+      color:"success",
+      message:"✅ 글을 삭제했습니다."
+    });
+    setShowToast(true);
   }
+
+
+  const [editPost, setEditPost] = useState({
+    show:false,
+    post:null
+  });
+
+  //수정 버튼을 눌렀을때 실행할 함수 
+  const handleUpdate = (item:Post)=>{
+    setEditPost({
+      show:true,
+      post:item
+    });
+  }
+
+  /*
+    유니코드 이모지 (emoji)
+    ✅ ❌ ⚠️
+  */
+
+  // Toast 메세지를 띄울지 여부를 상태값으로 관리
+  const [showToast, setShowToast] = useState(false);
+  // Toast 메세지의 색상과 내용을 상태값으로 관리
+  const [ToastInfo, setToastInfo] = useState<ToastInfo>({
+    color:"",
+    message:""
+  });
 
   return (
     <div className="container">
+
+      <ToastMessage show={showToast} 
+        info={ToastInfo} //타입이 ToastInfo
+        onClose={()=>setShowToast(false)}/>
+
+      <EditPostModal show={editPost.show} 
+        post = {editPost.post}
+        onClose={()=>setEditPost({...editPost, show:false})}
+        onUpdate={async (post:Post)=>{
+          const updatedPost = await window.api.updatePost(post);
+          console.log(updatedPost);
+          load();
+          //Toast 띄우기
+          setToastInfo({
+              color:"warning",
+              message:"✅ 글을 수정했습니다."
+            });
+            setShowToast(true);
+        }}/>
+
+
       <h1>게시글 (Spring Boot + Electron)</h1>
       <input type="text" placeholder="제목" name="title" onChange={handleChange} value={newPost.title}/>
       <input type="text" placeholder="작성자" name="author" onChange={handleChange} value={newPost.author}/>
@@ -74,19 +148,18 @@ function App() {
             <th>아이디</th>
             <th>제목</th>
             <th>작성자</th>
+            <th>수정</th>
             <th>삭제</th>
-            <th>사제2</th>
           </tr>
         </thead>
         <tbody>
           {posts.map(item=>(
-            <tr>
+            <tr key={item.id}>
               <td>{item.id}</td>
               <td>{item.title}</td>
               <td>{item.author}</td>
-              <td><button onClick={()=>{
-                deletePost(item.id);
-              }}>삭제</button></td>
+              <td><button onClick={()=>handleUpdate(item)}>수정</button></td>
+              <td><button onClick={()=>deletePost(item.id)}>삭제</button></td>
             </tr>
           ))}
         </tbody>
