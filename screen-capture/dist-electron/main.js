@@ -1,7 +1,33 @@
-import { ipcMain, screen, desktopCapturer, app, BrowserWindow } from "electron";
+import { ipcMain, dialog, screen, desktopCapturer, app, BrowserWindow, globalShortcut } from "electron";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import fs from "node:fs";
+ipcMain.on("save-image", async (_event, imageData) => {
+  if (!imageData) return;
+  const { canceled, filePath } = await dialog.showSaveDialog({
+    title: "켑쳐된 이미지 저장츄",
+    defaultPath: "capture.png",
+    filters: [{ name: "Images", extensions: ["png"] }]
+  });
+  if (!canceled) {
+    const data = imageData.replace(/^data:image\/\w+;base64,/, "");
+    const buffer = Buffer.from(data, "base64");
+    fs.writeFile(filePath, buffer, (error) => {
+      if (error) {
+        console.log(error);
+      } else {
+        console.log(filePath + " save success!");
+        dialog.showMessageBox({
+          type: "info",
+          title: "저장 완료",
+          message: "이미지가 성공적으로 저장되었습니다.",
+          buttons: ["확인"]
+        });
+      }
+    });
+  }
+});
 ipcMain.handle("screen-capture", async () => {
   const display = screen.getPrimaryDisplay();
   const { bounds } = display;
@@ -54,9 +80,20 @@ app.on("activate", () => {
 });
 app.whenReady().then(() => {
   createWindow();
-  if (!app.isPackaged) {
+});
+app.on("browser-window-focus", () => {
+  globalShortcut.register("Control+t", () => {
     win.webContents.openDevTools();
-  }
+  });
+  globalShortcut.register("Control+s", async () => {
+    win.webContents.send("get-image");
+  });
+});
+app.on("browser-window-blur", () => {
+  globalShortcut.unregisterAll();
+});
+app.on("will-quit", () => {
+  globalShortcut.unregisterAll();
 });
 export {
   MAIN_DIST,
