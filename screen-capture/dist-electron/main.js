@@ -57,6 +57,12 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs")
     }
+    // transparent:true,
+    // frame:false,
+    // fullscreen:true, // 화면전체덮기
+    // alwaysOnTop:true, // 앱의 항상 위에있도록
+    // skipTaskbar:true, // 아래 일렉트론 아이콘이 사라짐
+    // resizable:false //사이즈변경불가
   });
   win.webContents.on("did-finish-load", () => {
     win == null ? void 0 : win.webContents.send("main-process-message", (/* @__PURE__ */ new Date()).toLocaleString());
